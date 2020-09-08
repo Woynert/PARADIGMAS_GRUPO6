@@ -1,6 +1,8 @@
 import pygame, sys, math
 pygame.init()
 
+print("Prueba :)") 
+
 #Crear ventana
 screenSize = (480, 480)
 roomSize = (160, 160)
@@ -33,3 +35,4 @@ while True:
     pygame.transform.scale(drawSurface, screenSize, screen)
     pygame.display.flip()
     clock.tick(60)
+
