@@ -1,27 +1,39 @@
-import pygame, sys, math, random
+import pygame, sys, math, random, numpy
 pygame.init()
 
+GlobalScale = 4;
+
 #Crear ventana
-screenhabSize = (816, 528)
-roomhabSize = (816, 528) #roomhabSize = (176, 176)
+screenhabSize = (16*17*GlobalScale, 16*11*GlobalScale)
+roomhabSize = (16*17*GlobalScale, 16*11*GlobalScale) #roomhabSize = (176, 176)
 
 screen = pygame.display.set_mode(screenhabSize, pygame.RESIZABLE)
 drawSurface = pygame.Surface(roomhabSize)
 clock = pygame.time.Clock()
 
 #Definir colores
-BLACK  = (   0,   0,   0)
-WHITE  = ( 255, 255, 255)
-GRAY   = (  30,  30,  30)
-GREEN  = (   0, 255,   0)
-RED    = ( 255,   0,   0)
-BLUE   = (   0,   0, 255)
-YELLOW = ( 252, 186,   3)
+BLACK   = (   0,   0,   0)
+WHITE   = ( 255, 255, 255)
+GRAY    = (  30,  30,  30)
+GRAY2   = (  45,  45,  45)
+GREEN   = (   0, 255,   0)
+RED     = ( 255,   0,   0)
+BLUE    = (   0,   0, 255)
+YELLOW  = ( 252, 186,   3)
+YELLOW2 = ( 255, 255,   0)
+ORANGE  = ( 255, 128,   0)
 sign = lambda x: int(math.copysign(1, x))
 
 #Fonts
 font1 = pygame.font.Font(None, 30)
-myText = font1.render("TEXTO DE PRUEBA", 0, WHITE)
+font2 = pygame.font.Font(None, 80)
+
+#Images
+imgWeapon = []
+#imgWeapon.append(pygame.transform.rotozoom(pygame.image.load("resources/images/weapon0.png"), 0, 3))
+imgWeapon.append(pygame.transform.rotozoom(pygame.image.load("resources/images/weapon0.png"), 0, GlobalScale*0.9))
+imgWeapon.append(pygame.transform.rotozoom(pygame.image.load("resources/images/weapon1.png"), 0, GlobalScale*0.9))
+imgWeapon.append(pygame.transform.rotozoom(pygame.image.load("resources/images/weapon2.png"), 0, GlobalScale*0.9))
 
 """
 Elements
@@ -30,18 +42,20 @@ Elements
 2 -> Enemigo Perseguidor
 """
 
+
+
 #LEVELS
 lvlSel = 0
 listLevel = []
 lvl  = [[0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,3,0,0,3,0],
         [0,0,1,0,0,0,1,0,0],
         [0,0,1,0,0,0,1,0,0],
         [0,0,0,0,2,0,0,0,0],
-        [0,1,0,0,0,0,0,1,0],
+        [0,1,3,0,0,0,0,1,0],
         [0,0,1,0,0,0,1,0,0],
-        [0,0,0,1,1,1,0,0,0],
-        [0,0,0,0,0,0,0,0,0]]
+        [0,0,0,1,1,1,0,3,0],
+        [0,3,0,0,0,0,0,0,0]]
 listLevel.append(lvl)
 lvl  = [[0,0,0,0,0,0,0,0,0],
         [0,0,1,0,0,0,1,0,0],
@@ -50,7 +64,7 @@ lvl  = [[0,0,0,0,0,0,0,0,0],
         [0,0,0,0,2,0,0,0,0],
         [0,0,0,0,0,0,0,0,0],
         [0,1,1,1,0,1,1,1,0],
-        [0,0,1,0,0,0,1,0,0],
+        [0,3,1,0,0,0,1,0,0],
         [0,0,0,0,0,0,0,0,0]]
 listLevel.append(lvl)
 lvl  = [[0,0,0,0,0,0,0,0,0],
@@ -61,7 +75,7 @@ lvl  = [[0,0,0,0,0,0,0,0,0],
         [0,0,1,0,0,0,1,0,0],
         [0,0,1,1,0,1,1,0,0],
         [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0]]
+        [0,0,0,0,0,0,0,0,3]]
 listLevel.append(lvl)
     
 
@@ -69,31 +83,37 @@ listLevel.append(lvl)
 def draw_grid():
     #Vertical
     for i in range(0, 10):
-        pygame.draw.line(drawSurface, GRAY, (i*16*3, 0), (i*16*3, 160*3))
+        pygame.draw.line(drawSurface, GRAY, (i*16*GlobalScale, 0), (i*16*GlobalScale, 160*GlobalScale))
     #Horizontal
     for i in range(0, 10):
-        pygame.draw.line(drawSurface, GRAY, (0, i*16*3), (160*3, i*16*3))
+        pygame.draw.line(drawSurface, GRAY, (0, i*16*GlobalScale), (160*GlobalScale, i*16*GlobalScale))
 
 def obj_collect(id): #object collecion
     lista = []
 
     #juntar todos los objetos en una lista
+
     for obj in lstWalls: 
         if type(obj) == id:
             lista.append(obj)
     for obj in fixLstMaster[Jsel][Isel][0]: 
         if type(obj) == id:
             lista.append(obj)
-    for obj in lstDoors: 
-        if type(obj) == id:
-            lista.append(obj)
+    if (fixLstMaster[Jsel][Isel][3] == 1):        
+        for obj in lstDoors: 
+            if type(obj) == id:
+                lista.append(obj)
+    else:
+        for obj in lstClosedDoors: 
+            if type(obj) == id:
+                lista.append(obj)
     return(lista)
 
 def obj_collision(obj1, obj2, mx = 0, my = 0): #collision
     for objCol in obj_collect(obj2):
         if (obj1.x+mx + obj1.width > objCol.x) and (objCol.x + objCol.width > obj1.x+mx) and (obj1.y+my + obj1.height > objCol.y) and (objCol.y + objCol.height > obj1.y+my):
-            return(True)
-    return(False)
+            return([True, objCol])
+    return([False, None])
 
 def level_create(_id):
     for i in range(0, 9):
@@ -117,14 +137,15 @@ def MasterCreate():
         lstMaster.append([])
 
         for i in range(0, habSize*2 -1):
-            lstMaster[j].append([0, 0, 0])
+            lstMaster[j].append([0, 0, 0, 1])
 
     #Empezar generacion
     lstMaster[Jsel][Isel] = []  #COORDENADA PAR
     lstMaster[Jsel][Isel].append(extractLevel(random.randint(0, len(listLevel)-1)))
     lstMaster[Jsel][Isel].append(0) #id
     lstMaster[Jsel][Isel].append(1) #vistado
-    #unlockNearbyDoors(Jsel, Isel, lstMaster)
+    lstMaster[Jsel][Isel].append(0) #terminado
+    unlockNearbyDoors(Jsel, Isel, lstMaster)
     #extractLevel(lstMaster[Jsel][Isel], random.randint(0, len(listLevel)-1))
     MasterCreateBranchC(Jsel, Isel)
     
@@ -242,14 +263,17 @@ def extractLevel(_id):
             if (_objId == 1): #Wall
                 _obj = Wall(x = j*16+16, y = i*16+16)
             elif (_objId == 2): #Enemy
-                _obj = Enemy(x = j*16+16 +16/2 -10/2, y = i*16+16 +16/2 -10/2)
+                _obj = Enemy0Dumb(x = j*16+16 +16/2 -10/2, y = i*16+16 +16/2 -10/2)
+            elif (_objId == 3): #Enemy
+                _obj = Enemy1Hunter(x = j*16+16 +16/2 -10/2, y = i*16+16 +16/2 -10/2)
             if (_obj != 0):
                 _lsEx.append(_obj)
     return(_lsEx)
 
 def createDoors():
-    global lstDoors, Jsel, Isel
+    global lstDoors, lstClosedDoors, Jsel, Isel
     lstDoors = []
+    lstClosedDoors = []
 
 
     _yHabSize = len(fixLstMaster)
@@ -265,6 +289,7 @@ def createDoors():
         lstDoors.append(Door(x = 160, y = (16)*4+8, height = (16)*4+8, dir = 0))
     else:
         lstDoors.append(Wall(x = 160, y = (16)*4+8, height = (16)*4+8))
+    lstClosedDoors.append(Wall(x = 160, y = (16)*4+8, height = (16)*4+8))
 
     #Izquierda
     _needDoor = False;
@@ -276,6 +301,7 @@ def createDoors():
         lstDoors.append(Door(x = 0, y = (16)*4+8, height = (16)*4+8, dir = 2))
     else:
         lstDoors.append(Wall(x = 0, y = (16)*4+8, height = (16)*4+8))
+    lstClosedDoors.append(Wall(x = 0, y = (16)*4+8, height = (16)*4+8))
 
     #Arriba
     _needDoor = False;
@@ -287,6 +313,7 @@ def createDoors():
         lstDoors.append(Door(x = (16)*4+8, y = 0, width = (16)*4+8, dir = 3))
     else:
         lstDoors.append(Wall(x = (16)*4+8, y = 0, width = (16)*4+8))
+    lstClosedDoors.append(Wall(x = (16)*4+8, y = 0, width = (16)*4+8))
 
     #Abajo
     _needDoor = False;
@@ -298,6 +325,7 @@ def createDoors():
         lstDoors.append(Door(x = (16)*4+8, y = 160, width = (16)*4+8, dir = 1))
     else:
         lstDoors.append(Wall(x = (16)*4+8, y = 160, width = (16)*4+8))
+    lstClosedDoors.append(Wall(x = (16)*4+8, y = 160, width = (16)*4+8))
 
 def showMap():
     global fixLstMaster, Jsel, Isel
@@ -348,12 +376,23 @@ def unlockNearbyDoors(_y, _x, _lsMasterCase):
         #if (_lsMasterCase[_y-_d][_x][0] == 1):
         _lsDir.append([-_d, 0])
 
-    print("Preuba _lsMasterCase")
+    #print("Preuba _lsMasterCase")
     for b in _lsDir:
         _lsMasterCase[_y+b[0]][_x+b[1]][2] = 1
+        pass
 
+def anyEnemyRoom(_lsMasterCase):
+    for _sub in Enemy.__subclasses__():
+        for _obj in _lsMasterCase:
+            if (type(_obj) == _sub):
+                print(_obj.name)
+                return(True)
+    return(False)
 
-
+def setRoomClear():
+    print(anyEnemyRoom(fixLstMaster[Jsel][Isel][0]))
+    if (not anyEnemyRoom(fixLstMaster[Jsel][Isel][0])):
+        fixLstMaster[Jsel][Isel][3] = 1
 
 class MasterCreateBranchC():
 
@@ -385,15 +424,14 @@ class MasterCreateBranchC():
                 lstMaster[self.y +_dir[0]][self.x +_dir[1]].append(extractLevel(random.randint(0, len(listLevel)-1))) #objetos extraidos
 
                 if (habMax == 1): #Habitación del jefe
-                    print("OOOEEEAAA") 
                     lstMaster[self.y +_dir[0]][self.x +_dir[1]].append(1) #id
                     
                 else: #Habitación normal
-                    print("OOOEEEAAA2222222222")
                     lstMaster[self.y +_dir[0]][self.x +_dir[1]].append(0) #id
 
 
                 lstMaster[self.y +_dir[0]][self.x +_dir[1]].append(0) #visitado
+                lstMaster[self.y +_dir[0]][self.x +_dir[1]].append(0) #completado
 
                 
                 
@@ -470,7 +508,7 @@ class Door(Object):
         global Jsel, Isel
 
         #Cambiar de escenario
-        if (obj_collision(self, Player)):
+        if (obj_collision(self, Player)[0]):
             if (self.dir == 0): #derecha
                 Isel += 2
                 player.x = 16
@@ -487,13 +525,88 @@ class Door(Object):
                 Jsel -= 2
                 player.x = 16*5 +16/2 -player.width/2
                 player.y = 160-16
-            fixLstMaster[Jsel][Isel][2] = 1
+
+            fixLstMaster[Jsel][Isel][2] = 1 #No terminado
+            if (not anyEnemyRoom(fixLstMaster[Jsel][Isel][0])):
+                fixLstMaster[Jsel][Isel][3] = 1 #Level
+
             unlockNearbyDoors(Jsel, Isel, fixLstMaster)
             
             createDoors()
             showMap()
-
             
+
+
+
+class Bullet(Object):
+    def __init__(self, x = 0, y = 0, width = 4, height = 4, depth = 0, id = 0, angle = 0):
+
+        #constructor Object
+        Object.__init__(self, x, y, width, height, depth)
+
+        #atributos especiales
+        self.name = "Bala"
+        self.color1 = YELLOW2
+        self.color2 = YELLOW
+        self.color = self.color1
+
+        self.x = self.x - width/2
+        self.y = self.y - height/2
+
+        self.sx = self.x
+        self.sy = self.y
+
+        self.spdH = 0 
+        self.spdV = 0
+        self.spdMax = 10
+        self.damage = 0
+
+        if (id == 0):   #Pistol
+            self.damage = 0.6
+            self.spdMax = 4
+        elif (id == 1): #Uzi
+            self.damage = 0.5
+            self.spdMax = 4
+        elif (id == 2): #Shotgun
+            self.damage = 1.5
+            self.spdMax = 3
+
+        #if (hip != 0):
+        #print(angle )
+        #print("cos",numpy.cos(angle ))
+        self.spdH = numpy.cos(angle) * self.spdMax
+        self.spdV = numpy.sin(angle) * self.spdMax
+        #else:
+            #fixLstMaster[Jsel][Isel][0].remove(self)
+
+
+    def movimiento(self):
+        _alreadyCol = False
+
+        #Enemigo
+        for _sub in Enemy.__subclasses__():
+            _enemyCol = obj_collision(self, _sub, 0, 0)
+            if (_enemyCol[0]):
+                _enemyCol[1].vida -= self.damage
+                if (_enemyCol[1].vida <= 0):
+                    _enemyCol[1].morir()
+                fixLstMaster[Jsel][Isel][0].remove(self)
+                _alreadyCol = True
+
+        #Pared
+        if (_alreadyCol == False):
+            if obj_collision(self, Wall, 0, 0)[0]:
+                fixLstMaster[Jsel][Isel][0].remove(self)
+            else:
+
+                if obj_collision(self, Wall, 0, 0)[0]:
+                    fixLstMaster[Jsel][Isel][0].remove(self)
+                else:
+                    self.y += self.spdV
+                    self.x += self.spdH
+
+
+
 
 
 class Player(Object):
@@ -514,14 +627,17 @@ class Player(Object):
         self.vida = 10
         self.vidaMax = 10
 
+        self.weapon = 1 #pistola
+        self.ammo = 300000 #pistola
         self.scoty = False
+        self.ableToShoot = True
 
 
     def applyMovement(self, spdH, spdV):
         if spdH != 0:
-            if obj_collision(self, Wall, spdH, 0):
+            if obj_collision(self, Wall, spdH, 0)[0]:
                 for i in range(1, abs(int(spdH))):
-                    if not obj_collision(self, Wall, sign (spdH), 0):
+                    if not obj_collision(self, Wall, sign (spdH), 0)[0]:
                         self.x += sign(spdH)
                     else:
                         spdH = 0
@@ -530,16 +646,71 @@ class Player(Object):
                 self.x += spdH
             
         if spdV != 0:
-            if obj_collision(self, Wall, 0, spdV):
+            if obj_collision(self, Wall, 0, spdV)[0]:
                 for i in range(1, abs(int(spdV))):
-                    if not obj_collision(self, Wall, 0, sign(spdV)):
+                    if not obj_collision(self, Wall, 0, sign(spdV))[0]:
                         self.y += sign(spdV)
                     else:
                         spdV = 0
                         break
             else:
                 self.y += spdV
+    def shoot(self):
+        if (self.ableToShoot) and ((self.weapon == 0) or (self.ammo > 0)):
+            self.ableToShoot = False
+            self.ammo -= 1
+            mx, my = pygame.mouse.get_pos()
+            _bul = None
+            if (self.weapon == 0): #Pistola
 
+                _x = self.x +self.width/2 
+                _y = self.y +self.height/2 
+                _rd = 0
+
+                if ((_x-(mx/GlobalScale)) != 0):
+                    _rd = numpy.arctan((_y-(my/GlobalScale))/(_x-(mx/GlobalScale)))
+
+                    if (_x > (mx/GlobalScale)):
+                        _rd += numpy.pi
+
+                pygame.time.set_timer(Alarm4, 500)
+                fixLstMaster[Jsel][Isel][0].append(Bullet(x = _x, y = _y, id = 0, angle = _rd))
+                
+            elif (self.weapon == 1): #Uzi
+                _x = self.x +self.width/2 
+                _y = self.y +self.height/2 
+                _rd = 0
+
+                if ((_x-(mx/GlobalScale)) != 0):
+                    _rd = numpy.arctan((_y-(my/GlobalScale))/(_x-(mx/GlobalScale)))
+
+                    if (_x > (mx/GlobalScale)):
+                        _rd += numpy.pi
+
+                pygame.time.set_timer(Alarm4, 150)
+                fixLstMaster[Jsel][Isel][0].append(Bullet(x = _x, y = _y, id = 1, angle = _rd))
+
+            elif (self.weapon == 2): #Escopeta
+                _x = self.x +self.width/2 
+                _y = self.y +self.height/2 
+                _rd = 0
+                
+                if ((_x-(mx/GlobalScale)) != 0):
+                    _rd = numpy.arctan((_y-(my/GlobalScale))/(_x-(mx/GlobalScale)))
+
+                    if (_x > (mx/GlobalScale)):
+                        _rd += numpy.pi
+
+                pygame.time.set_timer(Alarm4, 1000)
+
+                fixLstMaster[Jsel][Isel][0].append(Bullet(x = _x, y = _y, id = 2, angle = _rd -numpy.pi/12 +random.randint(-8, 8)*numpy.pi/180))
+                fixLstMaster[Jsel][Isel][0].append(Bullet(x = _x, y = _y, id = 2, angle = _rd +random.randint(-8, 8)*numpy.pi/180))
+                fixLstMaster[Jsel][Isel][0].append(Bullet(x = _x, y = _y, id = 2, angle = _rd +numpy.pi/12 +random.randint(-8, 8)*numpy.pi/180))
+
+            #No ammo restore to pistol
+            if (self.ammo < 1):
+                self.weapon = 0
+            
     def movimiento(self):
 
         #Controles
@@ -585,75 +756,198 @@ class Player(Object):
 class Enemy(Object):
     def __init__(self, x = 0, y = 0, width = 10, height = 10, depth = 0):
 
+
         #constructor Object
         Object.__init__(self, x, y, width, height, depth)
 
         #atributos especiales
         self.name = "Enemigo"
         self.color = GREEN
-        self.spdMax = 0.5
+        self.spdMax = 0.4
+        self.vida = 1
 
         self.spdH = 0
         self.spdV = 0
         self.damage = 1
 
-    def applyMovement(self, spdH, spdV):
+    def applyMovement(self, spdH, spdV, Hunter):
+        #print(spdH, spdV)
         if spdH != 0:
-            if obj_collision(self, Wall, spdH, 0):
-                """for i in range(1, abs(int(spdH))):
-                    if not obj_collision(player, Wall, sign (spdH), 0):
-                        self.x += sign(spdH)
-                    else:
-                        spdH = 0
-                        break"""
+            _obCol = obj_collision(self, Wall, spdH, 0)
+            if _obCol[0]:
+                if (Hunter):
+                    a = self.x -_obCol[1].x
+                    b = self.y -_obCol[1].y
+                    hip = math.sqrt(pow(a, 2) +pow(b, 2))
+
+                    if (hip != 0):
+                        cos = -a/hip *-1
+                        sen = -b/hip *-1
+                        #print("A", self.spdH, self.spdV)
+
+                        if (abs(self.spdH) < abs(cos * self.spdMax *4)):
+                            self.spdH += cos * self.spdMax *random.randint(1,4) 
+                        if (abs(self.spdV) < abs(sen * self.spdMax *4)):
+                            self.spdV += sen * self.spdMax *random.randint(1,4) 
+                        #print("B", self.spdH, self.spdV)
+                        #self.applyMovement(self.spdH, self.spdV)
                 pass
             else:
                 self.x += spdH
             
         if spdV != 0:
-            if obj_collision(self, Wall, 0, spdV):
-                """for i in range(1, abs(int(spdV))):
-                    if not obj_collision(player, Wall, 0, sign(spdV)):
-                        self.y += sign(spdV)
-                    else:
-                        spdV = 0
-                        break"""
+            _obCol = obj_collision(self, Wall, 0, spdV)
+            if _obCol[0]:
+                if (Hunter):
+                    a = self.x -_obCol[1].x
+                    b = self.y -_obCol[1].y
+                    hip = math.sqrt(pow(a, 2) +pow(b, 2))
+
+                    if (hip != 0):
+                        cos = -a/hip *-1
+                        sen = -b/hip *-1
+                        #print("A", self.spdH, self.spdV)
+                        if (abs(self.spdH) < abs(cos * self.spdMax *4)):
+                            self.spdH += cos * self.spdMax *random.randint(1,4) 
+                        if (abs(self.spdV) < abs(sen * self.spdMax *4)):
+                            self.spdV += sen * self.spdMax *random.randint(1,4) 
+                        #print("B", self.spdH, self.spdV)
+                        #self.applyMovement(self.spdH, self.spdV)
                 pass
             else:
                 self.y += spdV
 
+    def Repeler(self):
+
+        for _sub in Enemy.__subclasses__():
+            _obCol = obj_collision(self, _sub, 0, 0)
+            #print(_obCol)
+            if _obCol[0]:
+                #print("Preuba Enemy Repeler")
+
+                a = self.x -_obCol[1].x
+                b = self.y -_obCol[1].y
+                hip = math.sqrt(pow(a, 2) +pow(b, 2))
+
+                if (hip != 0):
+                    cos = -a/hip *-1
+                    sen = -b/hip *-1
+
+                    #self.spdH = cos * self.spdMax
+                    #self.spdV = sen * self.spdMax
+                    self.applyMovement(cos * self.spdMax, sen * self.spdMax, False)
+                    return(True)
+        return(False)
+
+    def morir(self):
+        fixLstMaster[Jsel][Isel][0].remove(self)
+        setRoomClear()
+        self.x = -16
+        self.y = -16
+
+
+class Enemy0Dumb(Enemy):
+    def __init__(self, x = 0, y = 0, width = 10, height = 10, depth = 0):
+
+
+        #constructor Object
+        Object.__init__(self, x, y, width, height, depth)
+
+        #atributos especiales
+        self.name = "Enemigo"
+        self.color = GREEN
+        self.spdMax = 0.4
+
+        self.vida = 5
+
+        self.spdH = 0
+        self.spdV = 0
+        self.damage = 1
+
+        self.distance = 0
+
+
+
     def movimiento(self):
-        global Alarm1, player
-        """if not obj_collision(self, Wall, self.spdMax):
-            self.x += self.spdMax
-        else:
-            self.spdMax *= -1"""
-        #math.sin()
-        a = self.x -player.x
-        b = self.y -player.y
+        if (self.distance > 0):
+            self.applyMovement(self.spdH, self.spdV, False)
+            self.distance -= abs(self.spdH) + abs(self.spdV)
+
+        self.Repeler()
+
+
+    def randomMovement(self):
+
+        self.distance = random.randint(10, 70)
+
+        a = random.choice([-1, 0, 1])
+        b = random.choice([-1, 0, 1])
         hip = math.sqrt(pow(a, 2) +pow(b, 2))
-
-        cos = -a/hip
-        sen = -b/hip
-
+        
         if (hip != 0):
+            cos = -a/hip
+            sen = -b/hip
+
             self.spdH = cos * self.spdMax
             self.spdV = sen * self.spdMax
 
-        
+class Enemy1Hunter(Enemy):
+    def __init__(self, x = 0, y = 0, width = 10, height = 10, depth = 0):
 
-        #Personaje
-        if (obj_collision(self, Player, self.spdMax)):
+
+        #constructor Object
+        Object.__init__(self, x, y, width, height, depth)
+
+        #atributos especiales
+        self.name = "Enemigo"
+        self.color = GREEN
+        self.spdMax = 0.4
+
+        self.vida = 5
+
+        self.spdH = 0
+        self.spdV = 0
+        self.acc = 0.1
+        self.damage = 1
+
+    def movimiento(self):
+        global Alarm1, player
+
+        a = self.x -player.x
+        b = self.y -player.y
+        hip = math.sqrt(pow(a, 2) +pow(b, 2))
+        cos = 0
+        sen = 0
+
+        if (hip != 0):
+            cos = -a/hip
+            sen = -b/hip
+
+        if (not self.Repeler()):
+            if (hip != 0):
+                if (abs(self.spdH)  < abs(cos * self.spdMax)):
+                    self.spdH += cos * self.spdMax * self.acc
+                else:
+                    self.spdH -= self.spdH*self.acc
+
+                if (abs(self.spdV)  < abs(sen * self.spdMax)):
+                    self.spdV += sen * self.spdMax * self.acc
+                else:
+                    self.spdV -= self.spdV*self.acc
+
+
+        #Personaje Empujar
+        #if (player.scoty == False):
+        if (obj_collision(self, Player, self.spdMax)[0]):
             if (player.scoty == False):
                 pygame.time.set_timer(Alarm1, 1000)
                 player.vida -= self.damage
                 player.scoty = True
-                #print(player.vida)
-            player.spdH += cos * self.spdMax*10
-            player.spdV += sen * self.spdMax*10
+                    #print(player.vida)
+                player.spdH += cos * self.spdMax*10
+                player.spdV += sen * self.spdMax*10
         else:
-            self.applyMovement(self.spdH, self.spdV)
-
+            self.applyMovement(self.spdH, self.spdV, True)
 
 #START
 lstWalls = []
@@ -706,7 +1000,13 @@ MasterCreate()
 Alarm1 = pygame.USEREVENT +1
 pygame.time.set_timer(Alarm1, 0)
 Alarm2 = Alarm1 +1
-pygame.time.set_timer(Alarm2, 0)
+pygame.time.set_timer(Alarm2, 1000)
+Alarm3 = Alarm2 +1
+pygame.time.set_timer(Alarm3, 1000)
+Alarm4 = Alarm3 +1
+pygame.time.set_timer(Alarm4, 1000)
+Alarm5 = Alarm4 +1
+pygame.time.set_timer(Alarm5, 50)
 
 print("lstMaster")
 for n in lstMaster:
@@ -732,6 +1032,7 @@ fixMasterList()
 
 #PUERTAS
 lstDoors = []
+lstClosedDoors = []
 createDoors()
 
 
@@ -758,18 +1059,38 @@ while True:
 
             elif event.key == pygame.K_DOWN:
                 pass
-        if event.type == Alarm1:
+        if event.type == Alarm1: #Escudo Escoty
             player.scoty = False
             pygame.time.set_timer(Alarm1, 0)
             #print("AAAAA")
 
+        if event.type == Alarm2: #Random Movement
+            for obj in fixLstMaster[Jsel][Isel][0]:
+                if (type(obj) == Enemy0Dumb):
+                    obj.randomMovement()
 
-    
+        if event.type == Alarm4: #AutoShoot
+            player.ableToShoot = True
+            pass
 
+
+        if event.type == Alarm5: #Bullet Parpadear
+            for obj in fixLstMaster[Jsel][Isel][0]:
+                if (type(obj) == Bullet):
+                    if (obj.color == obj.color1):
+                        obj.color = obj.color2
+                    else:
+                        obj.color = obj.color1
+
+
+        if event.type == pygame.MOUSEBUTTONDOWN: #mouse
+            pass #player.shoot()
 
 
     #movimiento
     player.movimiento()
+    if pygame.mouse.get_pressed()[0]:
+        player.shoot()
     #enemy.movimiento()
 
 
@@ -794,44 +1115,55 @@ while True:
     
 
 
-    #Puertas
-    for obj in lstDoors:
-        if type(obj) == Door:
-            obj.colPlayer()
+    #Puertas (DISPONIBLES)
+    if (fixLstMaster[Jsel][Isel][3] == 1):
+        for obj in lstDoors:
+            if type(obj) == Door:
+                obj.colPlayer()
 
-        pygame.draw.rect(drawSurface, obj.color, [obj.x*3, obj.y*3, obj.width*3, obj.height*3])
+            pygame.draw.rect(drawSurface, obj.color, [obj.x*GlobalScale, obj.y*GlobalScale, obj.width*GlobalScale, obj.height*GlobalScale])
+        
+    else:
+        for obj in lstClosedDoors:
+
+            pygame.draw.rect(drawSurface, obj.color, [obj.x*GlobalScale, obj.y*GlobalScale, obj.width*GlobalScale, obj.height*GlobalScale])
 
     #Paredes Limites y player
     for obj in lstWalls:
-        pygame.draw.rect(drawSurface, obj.color, [obj.x*3, obj.y*3, obj.width*3, obj.height*3])
+        pygame.draw.rect(drawSurface, obj.color, [obj.x*GlobalScale, obj.y*GlobalScale, obj.width*GlobalScale, obj.height*GlobalScale])
 
     #Objetos del nivel
     #print(Jsel, Isel)
     for obj in fixLstMaster[Jsel][Isel][0]:
 
-        if type(obj) == Enemy: #Movimiento Enemigo
+        if (type(obj) == Enemy0Dumb or type(obj) == Enemy1Hunter): #Movimiento Enemigo
             obj.movimiento()
-        pygame.draw.rect(drawSurface, obj.color, [obj.x*3, obj.y*3, obj.width*3, obj.height*3])
+        elif type(obj) == Bullet:#Bala
+            obj.movimiento()
+        pygame.draw.rect(drawSurface, obj.color, [obj.x*GlobalScale, obj.y*GlobalScale, obj.width*GlobalScale, obj.height*GlobalScale])
+
 
     #UI
+
+    #HEALTH
     _width = 12
     for i in range(0, 5):
-        pygame.draw.rect(drawSurface, WHITE, [(160+16+8+17*i)*3, 20*3, _width*3, _width*3])
+        pygame.draw.rect(drawSurface, WHITE, [(160+16+8+17*i)*GlobalScale, 18*GlobalScale, _width*GlobalScale, _width*GlobalScale])
         for j in range(0, 2):
             if (player.vida >= (i*2)+j+1):
-                    pygame.draw.rect(drawSurface, RED, [(160+16+8+17*i +_width/2*j +1 -j)*3, (20+1)*3, (_width/2 -1)*3 , (_width-2)*3])
+                    pygame.draw.rect(drawSurface, RED, [(160+16+8+17*i +_width/2*j +1 -j)*GlobalScale, (18+1)*GlobalScale, (_width/2 -1)*GlobalScale , (_width-2)*GlobalScale])
 
 
     #Mapa
     _ls = showMap()
-    _g  = int((816-528-20)/((len(_ls[0])+1)/2)) +1
+    _g  = int(((16*17*GlobalScale)-(16*11*GlobalScale)-20)/((len(_ls[0])+1)/2)) +1
 
 
     #for o in _ls:
         #print(o)
 
-    if (_g*((len(_ls)+1)/2) > 528-60*3):
-        _gh = (528-60*4) / ((len(_ls)+1)/2)
+    if (_g*((len(_ls)+1)/2) > ((16*11*GlobalScale)-87*GlobalScale)):
+        _gh = ((16*11*GlobalScale)-87*GlobalScale) / ((len(_ls)+1)/2)
     else:
         _gh = _g
 
@@ -848,19 +1180,21 @@ while True:
 
             if ((j*2 < len(_ls)) and i*2+1 < len(_ls[0])):
                 _color = GREEN
+                #print("Prueba _ls", _ls[j*2][i*2+1][1])
                 if (_ls[j*2][i*2+1][1] == 1):
-                    #print("Prueba _ls", _ls[j*2][i*2+1][0])
                     if (_ls[j*2][i*2+1][0] == 1) :
                         _color = WHITE
-                        pygame.draw.rect(drawSurface, _color, [(528 +_g*(i+1) +12 -_g2/2), 60*3 +_gh*j +_gh2/2, _g2, _gh2])
+                        pygame.draw.rect(drawSurface, _color, [((16*11*GlobalScale) +_g*(i+1) +12 -_g2/2), 87*GlobalScale +_gh*j +_gh2/2, _g2, _gh2])
 
             #Verticales
             if ((j*2+1 < len(_ls)) and i*2 < len(_ls[0])):
                 _color = GREEN
+                #print("Prueba _ls", _ls[j*2+1][i*2][1])
                 if (_ls[j*2+1][i*2][1] == 1):
+                    
                     if (_ls[j*2+1][i*2][0] == 1) :
                         _color = WHITE
-                        pygame.draw.rect(drawSurface, _color, [(528 +_g*i +_g/2 +12 -_g2/2), 60*3 +_gh*(j+1) -_gh2/2, _g2, _gh2])
+                        pygame.draw.rect(drawSurface, _color, [((16*11*GlobalScale) +_g*i +_g/2 +12 -_g2/2), 87*GlobalScale +_gh*(j+1) -_gh2/2, _g2, _gh2])
 
                 #Habitacion
             if (_ls[j*2][i*2][1] == 1): #Visto
@@ -870,19 +1204,55 @@ while True:
                 elif (_ls[j*2][i*2][0] == 11): #Boss Room
                     _color = RED
                 if (_ls[j*2][i*2][0] != 0):
-                    pygame.draw.rect(drawSurface, _color, [(528 +_g*i +12), (60*3 +_gh*j), (_g-5), (_gh-5)])
-            
+                    pygame.draw.rect(drawSurface, _color, [((16*11*GlobalScale) +_g*i +12), (87*GlobalScale +_gh*j), (_g-5), (_gh-5)])
+            else:
+                pygame.draw.rect(drawSurface, BLACK, [((16*11*GlobalScale) +_g*i +12), (87*GlobalScale +_gh*j), (_g-5), (_gh-5)])
 
+    #Weapon Background
+    _x = 176*GlobalScale          
+    _y = 40*GlobalScale  
+    pygame.draw.rect(drawSurface, GRAY2, [_x, _y +5*GlobalScale, _x+50*GlobalScale, 22*GlobalScale])    
         
     #actualizar
     pygame.transform.scale(drawSurface, screenhabSize, screen)
     
     #Texto
-    screen.blit(font1.render("HEALTH", 0, WHITE), ((160+16+8)*3, 10*3))
-    screen.blit(font1.render("MAP", 0, WHITE), ((160+16+8)*3, 50*3))
+    screen.blit(font1.render("HEALTH", 0, WHITE), ((160+16+8)*GlobalScale, 10*GlobalScale))
+    screen.blit(font1.render("WEAPON", 0, WHITE), ((160+16+8)*GlobalScale, 38*GlobalScale))
+    screen.blit(font1.render("MAP", 0, WHITE), ((160+16+8)*GlobalScale, 78*GlobalScale))
 
 
+    #Images
+    
 
+    _x = 176*GlobalScale
+    _y = 40*GlobalScale
+
+    
+
+    if (player.weapon == 0): #pistol
+        _x += 33*GlobalScale
+        _y += 2*GlobalScale
+    elif (player.weapon == 1): #uzi
+        _x += 35*GlobalScale
+        _y += 2*GlobalScale
+    elif (player.weapon == 2): #shotgun
+        _x += 33*GlobalScale
+        _y += 2*GlobalScale
+    screen.blit(imgWeapon[player.weapon], (_x, _y))
+
+    #_x += 70*GlobalScale
+    _x = 176*GlobalScale
+    _y = 40*GlobalScale
+    _x += 13*GlobalScale
+    _y += 10*GlobalScale
+
+    #Ammo
+    _txt = str(player.ammo)
+    if (player.weapon == 0):
+        _txt = "000"
+
+    screen.blit(font2.render(_txt, 0, WHITE), (_x, _y))
     pygame.display.flip()
     clock.tick(60)
 
