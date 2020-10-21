@@ -1,4 +1,2 @@
 # Videojuego de Mazmorras Aleatorias
-Dependencias:
-Python
-Pygame
+Dependencias: Python y Pygame
