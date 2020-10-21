@@ -1,4 +1,4 @@
-# PARADIGMAS_GRUPO6
+# Videojuego de Mazmorras Aleatorias
 Dependencias:
 Python
 Pygame
