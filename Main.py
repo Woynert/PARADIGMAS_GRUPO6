@@ -91,10 +91,10 @@ listLevel = []
 emptyLevel = [[0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0],
-            [0,0,101,0,0,102,0,0,0],
             [0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0],
-            [0,0,0,0,100,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0],
             [0,0,0,0,0,0,0,0,0]]
 
@@ -1438,6 +1438,7 @@ class Item(Object):
         self.id = id
         self.subId = subId #(para las armas)
         self.subAmmo = subAmmo #(para las armas)
+        self.Toque = False
 
         if (self.id == 0): #Botiquin
             self.color = WHITE
